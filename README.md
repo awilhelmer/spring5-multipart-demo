@@ -1,8 +1,8 @@
 # spring5-mutlipart-demo
 
-This project only demonstrates the following error when you try to delegate a Multipart request to another endpoint:
-
-`org.springframework.core.codec.CodecException: No suitable writer found for part: file`
+This project demonstrates to delegate a multipart file request to another endpoint in Spring5. 
+The goal is it to do it in a most reactive way, but it have a little blocking part handling the temp files
+and filling the webclient request (MultiValueMap)
 
 For testing start the Junit Test in `FileControllerTest`
 
