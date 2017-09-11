@@ -38,16 +38,17 @@ public class FileController {
    @PostMapping(value = "/file-upload")
    public Mono<ResponseEntity<String>> uploadFile(@RequestPart("json") Mono<FileInfo> fileInfo, @RequestPart("file") Mono<FilePart> file) {
       LOG.info("uploadFile called ...");
-      Mono<Tuple2<MultiValueMap<String, Object>, File>> map = fileInfo.and(file).map(this::mapToMultiFormMap);
+      Mono<Tuple2<MultiValueMap<String, Object>, File>> map = fileInfo.zipWith(file).map(this::mapToMultiFormMap);
       Mono<Tuple2<String, File>> response = map.flatMap(multiValueMap -> webClient.post()
             .uri(uriBuilder -> uriBuilder.path("/file-upload2").build())
             .body(BodyInserters.fromMultipartData(multiValueMap.getT1()))
             .accept(MediaType.APPLICATION_JSON)
             .retrieve()
             .bodyToMono(String.class)
+            .doAfterTerminate(() -> multiValueMap.getT2().delete())
             .map(s -> Tuples.of(s, multiValueMap.getT2())));
 
-      return response.doAfterTerminate((objects, throwable) -> objects.getT2().delete()).map(s -> new ResponseEntity<>(s.getT1(), HttpStatus.OK));
+      return response.map(s -> new ResponseEntity<>(s.getT1(), HttpStatus.OK));
    }
 
    private Tuple2<MultiValueMap<String, Object>, File> mapToMultiFormMap(Tuple2<FileInfo, FilePart> objetcs) {
