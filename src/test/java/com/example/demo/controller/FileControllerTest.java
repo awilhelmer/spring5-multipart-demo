@@ -1,7 +1,6 @@
 package com.example.demo.controller;
 
 import com.example.demo.model.FileInfo;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -52,17 +51,22 @@ public class FileControllerTest {
       headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
       parts.add("file", new HttpEntity<>(new FileSystemResource(file), headers));
 
-      String response = webClient.post()
-            .uri(uriBuilder -> uriBuilder.path("/file-upload").build())
-            .accept(MediaType.MULTIPART_FORM_DATA)
-            .body(BodyInserters.fromMultipartData(parts))
-            .retrieve()
-            .bodyToMono(String.class)
-            .block();
 
-      Assert.assertNotNull(response);
+      int iterations = 100;
+      for (int i = 0; i < iterations; i++) {
+         String response = webClient.post()
+               .uri(uriBuilder -> uriBuilder.path("/file-upload").build())
+               .accept(MediaType.MULTIPART_FORM_DATA)
+               .body(BodyInserters.fromMultipartData(parts))
+               .retrieve()
+               .bodyToMono(String.class)
+               .block();
 
-      LOG.info(String.format("File Created , response: %s", response));
+
+         LOG.info(String.format("File Created , response: %s", response));
+      }
+
+
 
    }
 
