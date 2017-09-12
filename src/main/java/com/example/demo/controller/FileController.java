@@ -15,9 +15,9 @@ import reactor.core.publisher.Mono;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
 
-import javax.servlet.annotation.MultipartConfig;
 import java.io.File;
 import java.io.IOException;
+import java.time.Duration;
 
 /**
  * This sample just illustrate a multipart rest delegation. It's blocking, it would be nice to delegate the stream in a non blocking way.
@@ -26,7 +26,6 @@ import java.io.IOException;
  *
  * @author Alexander Wilhelmer
  */
-@MultipartConfig(fileSizeThreshold = 20971520)
 @RestController
 @RequestMapping("/test")
 public class FileController {
@@ -55,6 +54,10 @@ public class FileController {
 
       File file = createTempFile(objetcs);
       objetcs.getT2().transferTo(file);
+      if (file.length() == 0) {
+         throw new RuntimeException("Zero byte file!");
+      }
+
       MultiValueMap<String, Object> parts = new LinkedMultiValueMap<>();
       HttpHeaders headers = new HttpHeaders();
       headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
@@ -92,7 +95,8 @@ public class FileController {
       file.transferTo(newFile);
       LOG.info(String.format("Size of new File: %s", newFile.length()));
 
-      return Mono.just(new ResponseEntity<>("File written!", HttpStatus.OK));
+
+      return Mono.just(new ResponseEntity<>("File written!", HttpStatus.OK)).delayElement(Duration.ofMillis(150));
    }
 
    @ExceptionHandler

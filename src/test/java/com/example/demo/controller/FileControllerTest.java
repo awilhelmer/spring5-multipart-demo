@@ -6,12 +6,14 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.web.reactive.server.WebTestClient;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.ResourceUtils;
@@ -28,13 +30,8 @@ import java.io.File;
 public class FileControllerTest {
    private static final Logger LOG = LoggerFactory.getLogger(FileControllerTest.class);
 
-   private WebClient webClient;
-
-   @Before
-   public void setup() {
-      this.webClient = WebClient.builder().baseUrl("http://localhost:8080/test").build();
-
-   }
+   @Autowired
+   private WebTestClient webClient;
 
    @Test
    public void uploadFile() throws Exception {
@@ -51,22 +48,18 @@ public class FileControllerTest {
       headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
       parts.add("file", new HttpEntity<>(new FileSystemResource(file), headers));
 
-
-      int iterations = 100;
+      int iterations = 1000;
       for (int i = 0; i < iterations; i++) {
-         String response = webClient.post()
-               .uri(uriBuilder -> uriBuilder.path("/file-upload").build())
+         webClient.post()
+               .uri(uriBuilder -> uriBuilder.path("/test/file-upload").build())
                .accept(MediaType.MULTIPART_FORM_DATA)
                .body(BodyInserters.fromMultipartData(parts))
-               .retrieve()
-               .bodyToMono(String.class)
-               .block();
+               .exchange()
+               .expectStatus()
+               .is2xxSuccessful()
+               .expectBody(String.class);
 
-
-         LOG.info(String.format("File Created , response: %s", response));
       }
-
-
 
    }
 
