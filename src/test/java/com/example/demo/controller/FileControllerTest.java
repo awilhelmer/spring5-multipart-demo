@@ -1,7 +1,6 @@
 package com.example.demo.controller;
 
 import com.example.demo.model.FileInfo;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
@@ -18,9 +17,12 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.ResourceUtils;
 import org.springframework.web.reactive.function.BodyInserters;
-import org.springframework.web.reactive.function.client.WebClient;
 
 import java.io.File;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * @author Alexander Wilhelmer
@@ -29,6 +31,7 @@ import java.io.File;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
 public class FileControllerTest {
    private static final Logger LOG = LoggerFactory.getLogger(FileControllerTest.class);
+   Throwable  errors = null;
 
    @Autowired
    private WebTestClient webClient;
@@ -39,7 +42,7 @@ public class FileControllerTest {
       fileInfo.setFileName("test-file.jpg");
       fileInfo.setMimeType(MediaType.IMAGE_JPEG_VALUE);
 
-      File file = ResourceUtils.getFile(this.getClass().getResource("/test-file.jpg"));
+      File file = ResourceUtils.getFile(this.getClass().getResource("/test-file2.jpg"));
       MultiValueMap<String, Object> parts = new LinkedMultiValueMap<>();
       HttpHeaders headers = new HttpHeaders();
       headers.setContentType(MediaType.APPLICATION_JSON);
@@ -48,19 +51,42 @@ public class FileControllerTest {
       headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
       parts.add("file", new HttpEntity<>(new FileSystemResource(file), headers));
 
-      int iterations = 1000;
-      for (int i = 0; i < iterations; i++) {
-         webClient.post()
-               .uri(uriBuilder -> uriBuilder.path("/test/file-upload").build())
-               .accept(MediaType.MULTIPART_FORM_DATA)
-               .body(BodyInserters.fromMultipartData(parts))
-               .exchange()
-               .expectStatus()
-               .is2xxSuccessful()
-               .expectBody(String.class);
+      int threads = 20;
+      int iterations = 100;
+      List<Thread> threadItems = Collections.synchronizedList(new ArrayList<>());
+      for (int i = 0; i < threads; i++) {
+         // Sorry dude @ http://www.posttestserver.com/ ... but i need a service ...
+         threadItems.add(new Thread(() -> {
+            for (int j = 0; j < iterations; j++) {
+               try {
+                  webClient.post()
+                        .uri(uriBuilder -> uriBuilder.path("/test/file-upload").build())
+                        .accept(MediaType.MULTIPART_FORM_DATA)
+                        .body(BodyInserters.fromMultipartData(parts))
+                        .exchange()
+                        .expectStatus()
+                        .is2xxSuccessful()
+                        .expectBody(String.class);
 
+               }
+               catch (Throwable t) {
+                  errors = t;
+               }
+
+            }
+            LOG.info("Thread stopped!");
+            threadItems.remove(threadItems.size() - 1);
+         }));
       }
+      threadItems.forEach(Thread::start);
 
+      while (!threadItems.isEmpty() && errors == null) {
+         Thread.sleep(Duration.ofSeconds(1).toMillis());
+      }
+      if (errors != null) {
+         throw new Exception(errors);
+      }
    }
 
 }
+

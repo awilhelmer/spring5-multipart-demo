@@ -33,6 +33,7 @@ public class FileController {
    private static final Logger LOG = LoggerFactory.getLogger(FileController.class);
 
    private WebClient webClient = WebClient.builder().baseUrl("http://localhost:8080/test").build();
+   private WebClient webClientHttpbin = WebClient.builder().baseUrl("http://posttestserver.com").build();
 
    @PostMapping(value = "/file-upload")
    public Mono<ResponseEntity<String>> uploadFile(@RequestPart("json") Mono<FileInfo> fileInfo, @RequestPart("file") Mono<FilePart> file) {
@@ -82,21 +83,21 @@ public class FileController {
 
    @PostMapping(value = "/file-upload2")
    public Mono<ResponseEntity<String>> upload2Test(@RequestPart("json") FileInfo fileInfo, @RequestPart("file") FilePart file) {
-      LOG.info("uploadFile2 called ...");
+//      LOG.info("uploadFile2 called ...");
 
-      LOG.info(String.format("Content Type of Bytes: %s", file.headers().getContentType()));
-      File newFile = new File("./" + fileInfo.getFileName());
-      try {
-         newFile.createNewFile();
-      }
-      catch (IOException e) {
-         LOG.error("", e);
-      }
-      file.transferTo(newFile);
-      LOG.info(String.format("Size of new File: %s", newFile.length()));
+//      LOG.info(String.format("Content Type of Bytes: %s", file.headers().getContentType()));
+//      File newFile = new File("./" + fileInfo.getFileName());
+//      try {
+//         newFile.createNewFile();
+//      }
+//      catch (IOException e) {
+//         LOG.error("", e);
+//      }
+//      file.transferTo(newFile);
+//      LOG.info(String.format("Size of new File: %s", newFile.length()));
 
 
-      return Mono.just(new ResponseEntity<>("File written!", HttpStatus.OK)).delayElement(Duration.ofMillis(150));
+      return Mono.just(new ResponseEntity<>("", HttpStatus.OK)).delayElement(Duration.ofMillis(153)); // Simulate IO
    }
 
    @ExceptionHandler
