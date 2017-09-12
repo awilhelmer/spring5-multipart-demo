@@ -42,7 +42,7 @@ public class FileControllerTest {
       fileInfo.setFileName("test-file.jpg");
       fileInfo.setMimeType(MediaType.IMAGE_JPEG_VALUE);
 
-      File file = ResourceUtils.getFile(this.getClass().getResource("/test-file2.jpg"));
+      File file = ResourceUtils.getFile(this.getClass().getResource("/test-file.jpg"));
       MultiValueMap<String, Object> parts = new LinkedMultiValueMap<>();
       HttpHeaders headers = new HttpHeaders();
       headers.setContentType(MediaType.APPLICATION_JSON);
