@@ -4,12 +4,13 @@ import com.example.demo.model.FileInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.*;
 import org.springframework.http.codec.multipart.FilePart;
+import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 import reactor.util.function.Tuple2;
@@ -36,19 +37,35 @@ public class FileController {
    private WebClient webClientHttpbin = WebClient.builder().baseUrl("http://posttestserver.com").build();
 
    @PostMapping(value = "/file-upload")
-   public Mono<ResponseEntity<String>> uploadFile(@RequestPart("json") Mono<FileInfo> fileInfo, @RequestPart("file") Mono<FilePart> file) {
+   public Mono<ResponseEntity<String>> uploadFile(ServerHttpRequest request) {
       LOG.info("uploadFile called ...");
-      Mono<Tuple2<MultiValueMap<String, Object>, File>> map = fileInfo.zipWith(file).map(this::mapToMultiFormMap);
-      Mono<Tuple2<String, File>> response = map.flatMap(multiValueMap -> webClient.post()
+      Mono<String> stringMono = webClient.post()
             .uri(uriBuilder -> uriBuilder.path("/file-upload2").build())
-            .body(BodyInserters.fromMultipartData(multiValueMap.getT1()))
-            .accept(MediaType.APPLICATION_JSON)
+            .body(request.getBody(), DataBuffer.class)
+            .headers(httpHeaders -> {
+               httpHeaders.put(HttpHeaders.CONTENT_TYPE, request.getHeaders().get(HttpHeaders.CONTENT_TYPE))
+               ;
+            })
             .retrieve()
-            .bodyToMono(String.class)
-            .doAfterTerminate(() -> multiValueMap.getT2().delete())
-            .map(s -> Tuples.of(s, multiValueMap.getT2())));
 
-      return response.map(s -> new ResponseEntity<>(s.getT1(), HttpStatus.OK));
+            .bodyToMono(String.class);
+
+      return stringMono.map(s -> new ResponseEntity<>(s, HttpStatus.OK));
+
+      //      request.getBody().subscribe(dataBuffer -> {
+      //         LOG.info(String.format("DataBuffer Count: %s",dataBuffer.readableByteCount()));
+      //      });
+      //      return Mono.just(new ResponseEntity<>("", HttpStatus.OK)).delayElement(Duration.ofMillis(85)); // Simulate IO
+
+      //      Mono<Tuple2<String, File>> response = map.flatMap(multiValueMap -> webClient.post()
+      //            .uri(uriBuilder -> uriBuilder.path("/file-upload2").build())
+      //            .body(BodyInserters.fromMultipartData(multiValueMap.getT1()))
+      //            .accept(MediaType.APPLICATION_JSON)
+      //            .retrieve()
+      //            .bodyToMono(String.class)
+      //            .doAfterTerminate(() -> multiValueMap.getT2().delete())
+      //            .map(s -> Tuples.of(s, multiValueMap.getT2())));
+
    }
 
    private Tuple2<MultiValueMap<String, Object>, File> mapToMultiFormMap(Tuple2<FileInfo, FilePart> objetcs) {
@@ -82,7 +99,7 @@ public class FileController {
    }
 
    @PostMapping(value = "/file-upload2")
-   public Mono<ResponseEntity<String>> upload2Test(@RequestPart("json") FileInfo fileInfo, @RequestPart("file") FilePart file) {
+   public Mono<ResponseEntity<String>> upload2Test(@RequestPart("json") Mono<FileInfo> fileInfo, @RequestPart("file") Mono<FilePart> file) {
       //      LOG.info("uploadFile2 called ...");
 
       //      LOG.info(String.format("Content Type of Bytes: %s", file.headers().getContentType()));
@@ -95,7 +112,8 @@ public class FileController {
       //      }
       //      file.transferTo(newFile);
       //      LOG.info(String.format("Size of new File: %s", newFile.length()));
-
+      Mono<Tuple2<MultiValueMap<String, Object>, File>> map = fileInfo.zipWith(file).map(this::mapToMultiFormMap);
+      map.block();
       return Mono.just(new ResponseEntity<>("", HttpStatus.OK)).delayElement(Duration.ofMillis(85)); // Simulate IO
    }
 
