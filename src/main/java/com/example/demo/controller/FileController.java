@@ -83,26 +83,25 @@ public class FileController {
 
    @PostMapping(value = "/file-upload2")
    public Mono<ResponseEntity<String>> upload2Test(@RequestPart("json") FileInfo fileInfo, @RequestPart("file") FilePart file) {
-//      LOG.info("uploadFile2 called ...");
+      //      LOG.info("uploadFile2 called ...");
 
-//      LOG.info(String.format("Content Type of Bytes: %s", file.headers().getContentType()));
-//      File newFile = new File("./" + fileInfo.getFileName());
-//      try {
-//         newFile.createNewFile();
-//      }
-//      catch (IOException e) {
-//         LOG.error("", e);
-//      }
-//      file.transferTo(newFile);
-//      LOG.info(String.format("Size of new File: %s", newFile.length()));
+      //      LOG.info(String.format("Content Type of Bytes: %s", file.headers().getContentType()));
+      //      File newFile = new File("./" + fileInfo.getFileName());
+      //      try {
+      //         newFile.createNewFile();
+      //      }
+      //      catch (IOException e) {
+      //         LOG.error("", e);
+      //      }
+      //      file.transferTo(newFile);
+      //      LOG.info(String.format("Size of new File: %s", newFile.length()));
 
-
-      return Mono.just(new ResponseEntity<>("", HttpStatus.OK)).delayElement(Duration.ofMillis(153)); // Simulate IO
+      return Mono.just(new ResponseEntity<>("", HttpStatus.OK)).delayElement(Duration.ofMillis(85)); // Simulate IO
    }
 
    @ExceptionHandler
    public Mono<ResponseEntity<?>> handleException(Exception e) {
       LOG.error("Error!", e);
-      return Mono.just(new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR));
+      return Mono.just(new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR));
    }
 }

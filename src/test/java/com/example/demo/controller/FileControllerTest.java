@@ -55,7 +55,6 @@ public class FileControllerTest {
       int iterations = 100;
       List<Thread> threadItems = Collections.synchronizedList(new ArrayList<>());
       for (int i = 0; i < threads; i++) {
-         // Sorry dude @ http://www.posttestserver.com/ ... but i need a service ...
          threadItems.add(new Thread(() -> {
             for (int j = 0; j < iterations; j++) {
                try {
